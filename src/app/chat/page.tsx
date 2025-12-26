@@ -85,7 +85,7 @@ export default function ChatPage() {
             if (initiator && localStreamRef.current) {
                 setTimeout(() => {
                     if (localStreamRef.current) {
-                        createOffer(localStreamRef.current);
+                        createOffer(localStreamRef.current, matchedPeerId);
                     }
                 }, 500);
             }

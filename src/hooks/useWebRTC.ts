@@ -14,7 +14,7 @@ interface UseWebRTCReturn {
     remoteStream: MediaStream | null;
     connectionState: RTCPeerConnectionState | 'new';
     peerId: string | null;
-    createOffer: (localStream: MediaStream) => Promise<void>;
+    createOffer: (localStream: MediaStream, targetPeerId?: string) => Promise<void>;
     handleOffer: (sdp: RTCSessionDescriptionInit, localStream: MediaStream) => Promise<void>;
     handleAnswer: (sdp: RTCSessionDescriptionInit) => Promise<void>;
     handleIceCandidate: (candidate: RTCIceCandidateInit) => void;
@@ -73,8 +73,9 @@ export function useWebRTC(): UseWebRTCReturn {
         return pc;
     }, [emit, peerId]);
 
-    const createOffer = useCallback(async (localStream: MediaStream): Promise<void> => {
-        if (!peerId) {
+    const createOffer = useCallback(async (localStream: MediaStream, targetPeerId?: string): Promise<void> => {
+        const peerToUse = targetPeerId || peerId;
+        if (!peerToUse) {
             console.error('🔗 No peer ID set');
             return;
         }
@@ -85,10 +86,10 @@ export function useWebRTC(): UseWebRTCReturn {
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
 
-            console.log('🔗 Sending offer to', peerId);
+            console.log('🔗 Sending offer to', peerToUse);
             emit('offer', {
                 sdp: offer,
-                targetId: peerId,
+                targetId: peerToUse,
             });
         } catch (err) {
             console.error('🔗 Error creating offer:', err);
