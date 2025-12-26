@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { VideoPlayer, ControlBar, TextChat, ConnectionStatus } from '@/components';
+import Dock from '@/components/Dock';
 import { useSocket, useMediaStream, useWebRTC } from '@/hooks';
 
 type ChatStatus = 'idle' | 'searching' | 'connecting' | 'connected' | 'disconnected';
@@ -234,132 +235,132 @@ export default function ChatPage() {
 
     return (
         <main className="min-h-screen bg-[#1a1a2e] flex flex-col relative overflow-hidden">
-            {/* Header */}
-            <header className="absolute top-0 left-0 right-0 z-20 p-3 md:p-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    {/* Live Indicator - Mobile */}
-                    <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-2 py-1 md:px-3 md:py-2">
-                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                        <span className="text-white font-medium text-xs md:text-sm">LIVE</span>
-                        <span className="text-white/60 text-xs md:text-sm">{formatDuration(callDuration)}</span>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <ConnectionStatus status={status} />
-                </div>
+            {/* Header - Just connection status */}
+            <header className="absolute top-0 left-0 right-0 z-20 p-3 md:p-4 flex items-center justify-end">
+                <ConnectionStatus status={status} />
             </header>
 
-            {/* Main Video Grid - Stack on mobile, side-by-side on desktop */}
-            <div className="flex-1 flex flex-col md:flex-row p-2 md:p-4 pt-16 md:pt-20 pb-28 md:pb-24 gap-2 md:gap-4">
-                {/* Local Video (You) */}
-                <div className="flex-1 relative rounded-xl md:rounded-2xl overflow-hidden bg-gradient-to-br from-[#2a2a4a] to-[#1a1a2e] border border-white/10 min-h-[35vh] md:min-h-0">
-                    <VideoPlayer stream={localStream} muted isLocal label="" />
-                    {/* Name Badge */}
-                    <div className="absolute bottom-2 left-2 md:bottom-4 md:left-4 flex items-center gap-1.5 md:gap-2">
-                        <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white text-xs md:text-sm font-bold">
-                            Y
-                        </div>
-                        <span className="text-white font-medium text-xs md:text-sm">You</span>
-                    </div>
-                </div>
-
-                {/* Remote Video (Stranger) */}
-                <div className="flex-1 relative rounded-xl md:rounded-2xl overflow-hidden bg-gradient-to-br from-[#2a2a4a] to-[#1a1a2e] border border-[#6C5CE7]/50 shadow-[0_0_30px_rgba(108,92,231,0.2)] min-h-[35vh] md:min-h-0">
+            {/* Mobile: Full-screen remote video with PIP local video */}
+            {/* Desktop: Side-by-side videos */}
+            <div className="flex-1 relative md:flex md:flex-row md:p-4 md:pt-20 md:pb-24 md:gap-4">
+                {/* Remote Video - Full screen on mobile, half on desktop */}
+                <div className="absolute inset-0 md:relative md:flex-1 md:rounded-2xl overflow-hidden bg-gradient-to-br from-[#2a2a4a] to-[#1a1a2e] md:border md:border-[#6C5CE7]/50">
                     <VideoPlayer stream={remoteStream} label="" />
-                    {/* Name Badge */}
-                    <div className="absolute bottom-2 left-2 md:bottom-4 md:left-4 flex items-center gap-1.5 md:gap-2">
-                        <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-xs md:text-sm font-bold">
+                    {/* Name Badge - Hidden on mobile, shown on desktop */}
+                    <div className="hidden md:flex absolute bottom-4 left-4 items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-sm font-bold">
                             S
                         </div>
-                        <span className="text-white font-medium text-xs md:text-sm">
+                        <span className="text-white font-medium text-sm">
                             {status === 'connected' ? 'Stranger' : status === 'searching' ? 'Searching...' : 'Connecting...'}
                         </span>
                     </div>
+                    {/* Status overlay for mobile when no stream */}
+                    {!remoteStream && (
+                        <div className="md:hidden absolute inset-0 flex flex-col items-center justify-center">
+                            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                                <svg className="w-8 h-8 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <span className="text-white/50 text-sm">
+                                {status === 'searching' ? 'Looking for a stranger...' : 'No Signal'}
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Local Video - PIP on mobile, side-by-side on desktop */}
+                <div className="absolute top-16 right-3 w-28 h-40 md:relative md:top-auto md:right-auto md:w-auto md:h-auto md:flex-1 rounded-xl md:rounded-2xl overflow-hidden bg-gradient-to-br from-[#2a2a4a] to-[#1a1a2e] border-2 border-white/20 md:border md:border-white/10 shadow-xl z-10">
+                    <VideoPlayer stream={localStream} muted isLocal label="" />
+                    {/* Name Badge - Only on desktop */}
+                    <div className="hidden md:flex absolute bottom-4 left-4 items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white text-sm font-bold">
+                            Y
+                        </div>
+                        <span className="text-white font-medium text-sm">You</span>
+                    </div>
                 </div>
             </div>
 
-            {/* Bottom Control Bar - Simplified for mobile */}
-            <div className="absolute bottom-0 left-0 right-0 p-2 md:p-4 flex items-center justify-center gap-2 md:gap-4 bg-gradient-to-t from-[#1a1a2e] via-[#1a1a2e]/80 to-transparent">
-                {/* End Button */}
-                <button
-                    onClick={handleEnd}
-                    className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center transition-colors"
-                >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-
-                {/* Mic Toggle */}
-                <button
-                    onClick={toggleAudio}
-                    disabled={!localStream}
-                    className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all ${isAudioEnabled
-                        ? 'bg-white/10 hover:bg-white/20 text-white'
-                        : 'bg-red-500 text-white'
-                        } disabled:opacity-50`}
-                >
-                    {isAudioEnabled ? (
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                        </svg>
-                    ) : (
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-                        </svg>
-                    )}
-                </button>
-
-                {/* Video Toggle */}
-                <button
-                    onClick={toggleVideo}
-                    disabled={!localStream}
-                    className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all ${isVideoEnabled
-                        ? 'bg-white/10 hover:bg-white/20 text-white'
-                        : 'bg-red-500 text-white'
-                        } disabled:opacity-50`}
-                >
-                    {isVideoEnabled ? (
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                    ) : (
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 18" />
-                        </svg>
-                    )}
-                </button>
-
-                {/* Chat Toggle */}
-                <button
-                    onClick={() => setShowChat(!showChat)}
-                    className={`relative w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all ${showChat ? 'bg-[#6C5CE7] text-white' : 'bg-white/10 hover:bg-white/20 text-white'
-                        }`}
-                >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                    {messages.length > 0 && !showChat && (
-                        <span className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
-                            {messages.filter((m) => !m.isOwn).length}
-                        </span>
-                    )}
-                </button>
-
-                {/* Switch User Button */}
-                <button
-                    onClick={handleNext}
-                    disabled={status === 'searching'}
-                    className="flex items-center gap-1.5 md:gap-2 bg-[#6C5CE7] hover:bg-[#5B4BD5] disabled:bg-[#6C5CE7]/50 rounded-full px-4 py-2 md:px-5 md:py-3 transition-colors disabled:cursor-not-allowed"
-                >
-                    <svg className="w-4 h-4 md:w-5 md:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <span className="text-white font-semibold text-xs md:text-sm">Next</span>
-                </button>
-            </div>
+            {/* Animated Dock Control Bar */}
+            <Dock
+                leftElement={
+                    <div className="flex items-center gap-2 mr-2">
+                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                        <span className="text-white font-medium text-sm">{formatDuration(callDuration)}</span>
+                    </div>
+                }
+                items={[
+                    {
+                        icon: (
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        ),
+                        label: 'End Call',
+                        onClick: handleEnd,
+                        className: 'bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white border-red-500/50'
+                    },
+                    {
+                        icon: isAudioEnabled ? (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                            </svg>
+                        ) : (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                            </svg>
+                        ),
+                        label: isAudioEnabled ? 'Mute' : 'Unmute',
+                        onClick: toggleAudio,
+                        active: !isAudioEnabled,
+                        disabled: !localStream
+                    },
+                    {
+                        icon: isVideoEnabled ? (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                        ) : (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 18" />
+                            </svg>
+                        ),
+                        label: isVideoEnabled ? 'Hide Video' : 'Show Video',
+                        onClick: toggleVideo,
+                        active: !isVideoEnabled,
+                        disabled: !localStream
+                    },
+                    {
+                        icon: (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                        ),
+                        label: 'Chat',
+                        onClick: () => setShowChat(!showChat),
+                        active: showChat
+                    },
+                    {
+                        icon: (
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        ),
+                        label: 'Next Person',
+                        onClick: handleNext,
+                        disabled: status === 'searching',
+                        className: 'bg-[#6C5CE7] border-[#6C5CE7]'
+                    }
+                ]}
+                panelHeight={68}
+                baseItemSize={44}
+                magnification={58}
+                distance={120}
+            />
 
             {/* Chat Sidebar - Full screen on mobile */}
             <div
