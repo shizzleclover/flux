@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
+// Use environment variable or fallback to production Railway URL
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://flux-be-production.up.railway.app';
 
 let socket: Socket | null = null;
 
