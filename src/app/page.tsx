@@ -48,8 +48,8 @@ export default function Home() {
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
           }}
         >
-          <span className="text-accent text-xs">✦</span>
-          <span className="text-white/90 text-sm font-medium">Anonymous Video Chat</span>
+          <span className="text-accent text-xs">☆*: .｡. o(≧▽≦)o .｡.:*☆</span>
+          <span className="text-white/90 text-sm font-medium">Lowkirkueinly Fun</span>
         </div>
 
         {/* Headline */}
