@@ -372,7 +372,7 @@ export default function ChatPage() {
                 `}
             >
                 {/* Chat Header */}
-                <div className="flex items-center justify-between p-4 border-b border-white/10">
+                <div className="flex items-center justify-between p-4">
                     <h3 className="text-white font-semibold">Chat</h3>
                     <button
                         onClick={() => setShowChat(false)}

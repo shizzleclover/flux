@@ -26,68 +26,107 @@ export const TextChat: React.FC<TextChatProps> = ({
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Auto-scroll to bottom
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isPeerTyping]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInputText(e.target.value);
-
-        // Handle typing indicator
         onTyping(true);
-
-        if (typingTimeoutRef.current) {
-            clearTimeout(typingTimeoutRef.current);
-        }
-
-        typingTimeoutRef.current = setTimeout(() => {
-            onTyping(false);
-        }, 1000);
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => onTyping(false), 1000);
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!inputText.trim() || disabled) return;
-
         onSendMessage(inputText.trim());
         setInputText('');
         onTyping(false);
-
-        if (typingTimeoutRef.current) {
-            clearTimeout(typingTimeoutRef.current);
-        }
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
 
     return (
-        <div className="flex flex-col h-full bg-transparent">
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+            <div style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '24px 16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px'
+            }}>
                 {messages.length === 0 && (
-                    <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
-                        <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center mb-4 rotate-12">
-                            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div style={{
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        padding: '0 24px'
+                    }}>
+                        <div style={{
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '16px',
+                            backgroundColor: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginBottom: '16px'
+                        }}>
+                            <svg style={{ width: '32px', height: '32px', color: 'rgba(255,255,255,0.6)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                             </svg>
                         </div>
-                        <p className="text-sm font-medium text-white">No messages yet</p>
-                        <p className="text-xs text-white/70">Start the conversation!</p>
+                        <p style={{ fontSize: '16px', fontWeight: 600, color: 'white', marginBottom: '8px' }}>
+                            It's quiet here...
+                        </p>
+                        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)' }}>
+                            Say hello to start the conversation!
+                        </p>
                     </div>
                 )}
 
                 {messages.map((msg) => (
                     <div
                         key={msg.id}
-                        className={`flex ${msg.isOwn ? 'justify-end' : 'justify-start'}`}
+                        style={{
+                            display: 'flex',
+                            width: '100%',
+                            justifyContent: msg.isOwn ? 'flex-end' : 'flex-start'
+                        }}
                     >
-                        <div
-                            className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${msg.isOwn
-                                    ? 'bg-white text-black rounded-tr-sm'
-                                    : 'bg-white/10 text-white backdrop-blur-md border border-white/10 rounded-tl-sm'
-                                }`}
-                        >
-                            <p className="text-sm leading-relaxed break-words">{msg.text}</p>
-                            <span className={`text-[10px] block mt-1 opacity-50 ${msg.isOwn ? 'text-black' : 'text-white'}`}>
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: msg.isOwn ? 'flex-end' : 'flex-start',
+                            maxWidth: '280px',
+                            gap: '6px'
+                        }}>
+                            {/* Message Bubble */}
+                            <div style={{
+                                padding: '12px 16px',
+                                borderRadius: msg.isOwn ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                                backgroundColor: msg.isOwn ? '#ffffff' : 'rgba(255,255,255,0.1)',
+                                color: msg.isOwn ? '#1a1a2e' : '#ffffff',
+                                border: msg.isOwn ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                                fontSize: '14px',
+                                lineHeight: '1.5',
+                                wordBreak: 'break-word'
+                            }}>
+                                {msg.text}
+                            </div>
+                            {/* Timestamp */}
+                            <span style={{
+                                fontSize: '11px',
+                                color: 'rgba(255,255,255,0.4)',
+                                paddingLeft: '4px',
+                                paddingRight: '4px'
+                            }}>
                                 {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                         </div>
@@ -95,40 +134,83 @@ export const TextChat: React.FC<TextChatProps> = ({
                 ))}
 
                 {isPeerTyping && (
-                    <div className="flex justify-start">
-                        <div className="bg-white/5 backdrop-blur-sm border border-white/5 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5 w-16">
-                            <span className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <span className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <span className="w-1.5 h-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                        <div style={{
+                            padding: '12px 16px',
+                            borderRadius: '16px 16px 16px 4px',
+                            backgroundColor: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                        }}>
+                            <span style={{ width: '6px', height: '6px', backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: '50%', animation: 'bounce 1s infinite' }} />
+                            <span style={{ width: '6px', height: '6px', backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: '50%', animation: 'bounce 1s infinite 0.15s' }} />
+                            <span style={{ width: '6px', height: '6px', backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: '50%', animation: 'bounce 1s infinite 0.3s' }} />
                         </div>
                     </div>
                 )}
-
                 <div ref={messagesEndRef} />
             </div>
 
             {/* Input Area */}
-            <form onSubmit={handleSubmit} className="p-4 border-t border-white/10 bg-black/20 backdrop-blur-md">
-                <div className="relative">
+            <div style={{
+                padding: '16px',
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                borderTop: '1px solid rgba(255,255,255,0.1)'
+            }}>
+                <form
+                    onSubmit={handleSubmit}
+                    style={{
+                        position: 'relative',
+                        opacity: disabled ? 0.5 : 1
+                    }}
+                >
                     <input
                         type="text"
                         value={inputText}
                         onChange={handleInputChange}
                         disabled={disabled}
                         placeholder={disabled ? "Connecting..." : "Type a message..."}
-                        className="w-full bg-white/5 hover:bg-white/10 focus:bg-white/15 border border-white/10 focus:border-white/30 rounded-full pl-5 pr-12 py-3.5 text-sm text-white placeholder-white/30 focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{
+                            width: '100%',
+                            height: '48px',
+                            backgroundColor: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '24px',
+                            padding: '0 56px 0 20px',
+                            fontSize: '14px',
+                            color: 'white',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                        }}
                     />
                     <button
                         type="submit"
                         disabled={!inputText.trim() || disabled}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-white text-black disabled:bg-white/10 disabled:text-white/20 transition-all hover:scale-105 active:scale-95 disabled:hover:scale-100"
+                        style={{
+                            position: 'absolute',
+                            right: '8px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            width: '32px',
+                            height: '32px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '50%',
+                            backgroundColor: (!inputText.trim() || disabled) ? 'rgba(255,255,255,0.1)' : 'white',
+                            color: (!inputText.trim() || disabled) ? 'rgba(255,255,255,0.3)' : 'black',
+                            border: 'none',
+                            cursor: (!inputText.trim() || disabled) ? 'not-allowed' : 'pointer'
+                        }}
                     >
-                        <svg className="w-4 h-4 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                         </svg>
                     </button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     );
 };
