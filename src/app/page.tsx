@@ -54,7 +54,7 @@ export default function Home() {
 
         {/* Headline */}
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white max-w-4xl leading-tight mb-12 tracking-tight">
-          Connect with random peers, instantly
+          Touch grass
         </h1>
 
         {/* Buttons - Apple Liquid Glass Style */}

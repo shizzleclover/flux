@@ -42,9 +42,21 @@ export function useWebRTC(): UseWebRTCReturn {
 
         // Handle incoming remote stream
         pc.ontrack = (event) => {
-            console.log('🔗 Remote track received', event.streams);
+            console.log('🔗 Remote track received', {
+                kind: event.track.kind,
+                streamId: event.streams[0]?.id,
+                tracks: event.streams[0]?.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled }))
+            });
             if (event.streams[0]) {
-                setRemoteStream(event.streams[0]);
+                setRemoteStream(prevStream => {
+                    // Only update if it's a new stream or the stream ID changed
+                    if (!prevStream || prevStream.id !== event.streams[0].id) {
+                        console.log('🔗 Setting new remote stream', event.streams[0].id);
+                        return event.streams[0];
+                    }
+                    console.log('🔗 Stream already set, skipping update');
+                    return prevStream;
+                });
             }
         };
 
