@@ -12,16 +12,12 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ stream, muted = false,
 
     useEffect(() => {
         if (videoRef.current && stream) {
-            console.log('📹 Attaching stream to video element', {
-                isLocal,
-                tracks: stream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled }))
-            });
+            console.log('📹 Attaching stream to video element', { streamId: stream.id, isLocal });
             videoRef.current.srcObject = stream;
         } else if (videoRef.current) {
-            console.log('📹 Clearing stream from video element', { isLocal });
             videoRef.current.srcObject = null;
         }
-    }, [stream, isLocal]);
+    }, [stream]); // isLocal doesn't affect stream attachment
 
     return (
         <div className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden group">

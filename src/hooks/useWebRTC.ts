@@ -5,9 +5,32 @@ import { useSocket } from './useSocket';
 
 const ICE_SERVERS: RTCConfiguration = {
     iceServers: [
+        // Google STUN servers
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
+        // Free TURN servers from Open Relay (Metered.ca) - 20GB/month free
+        {
+            urls: 'turn:a.relay.metered.ca:80',
+            username: 'e8dd65b92f6067e5bce6f645',
+            credential: 'uWdWNmkhvyqTEuSN',
+        },
+        {
+            urls: 'turn:a.relay.metered.ca:80?transport=tcp',
+            username: 'e8dd65b92f6067e5bce6f645',
+            credential: 'uWdWNmkhvyqTEuSN',
+        },
+        {
+            urls: 'turn:a.relay.metered.ca:443',
+            username: 'e8dd65b92f6067e5bce6f645',
+            credential: 'uWdWNmkhvyqTEuSN',
+        },
+        {
+            urls: 'turns:a.relay.metered.ca:443?transport=tcp',
+            username: 'e8dd65b92f6067e5bce6f645',
+            credential: 'uWdWNmkhvyqTEuSN',
+        },
     ],
+    iceCandidatePoolSize: 10,
 };
 
 interface UseWebRTCReturn {
