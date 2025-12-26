@@ -36,6 +36,12 @@ export function useWebRTC(): UseWebRTCReturn {
     const [connectionState, setConnectionState] = useState<RTCPeerConnectionState | 'new'>('new');
     const [peerId, setPeerId] = useState<string | null>(null);
 
+    // Use a ref to access the current peerId inside callbacks (prevents stale closure issues)
+    const peerIdRef = useRef<string | null>(null);
+    useEffect(() => {
+        peerIdRef.current = peerId;
+    }, [peerId]);
+
     const createPeerConnection = useCallback((localStream: MediaStream): RTCPeerConnection => {
         console.log('🔗 Creating peer connection');
 
@@ -68,12 +74,15 @@ export function useWebRTC(): UseWebRTCReturn {
 
         // Handle ICE candidates
         pc.onicecandidate = (event) => {
-            if (event.candidate && peerId) {
+            const currentPeerId = peerIdRef.current;
+            if (event.candidate && currentPeerId) {
                 console.log('🔗 Sending ICE candidate');
                 emit('ice-candidate', {
                     candidate: event.candidate.toJSON(),
-                    targetId: peerId,
+                    targetId: currentPeerId,
                 });
+            } else if (event.candidate) {
+                console.warn('🔗 ICE candidate generated but no peerId found (stale closure?)');
             }
         };
 
@@ -93,7 +102,7 @@ export function useWebRTC(): UseWebRTCReturn {
 
     const createOffer = useCallback(async (localStream: MediaStream, targetPeerId?: string): Promise<void> => {
         // Use the explicitly passed targetPeerId if provided; otherwise fall back to stored peerId
-        const peerToUse = targetPeerId ?? peerId;
+        const peerToUse = targetPeerId ?? peerIdRef.current;
         if (!peerToUse) {
             console.error('🔗 No peer ID set for offer');
             return;
@@ -119,7 +128,8 @@ export function useWebRTC(): UseWebRTCReturn {
         sdp: RTCSessionDescriptionInit,
         localStream: MediaStream
     ): Promise<void> => {
-        if (!peerId) {
+        const currentPeerId = peerIdRef.current;
+        if (!currentPeerId) {
             console.error('🔗 No peer ID set');
             return;
         }
@@ -138,10 +148,10 @@ export function useWebRTC(): UseWebRTCReturn {
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
 
-            console.log('🔗 Sending answer to', peerId);
+            console.log('🔗 Sending answer to', currentPeerId);
             emit('answer', {
                 sdp: answer,
-                targetId: peerId,
+                targetId: currentPeerId,
             });
         } catch (err) {
             console.error('🔗 Error handling offer:', err);
