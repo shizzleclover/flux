@@ -25,6 +25,12 @@ const fetchIceServers = async (): Promise<RTCConfiguration> => {
         const data = await res.json();
         console.log('🔗 ICE servers loaded:', data.iceServers?.length || 0, 'servers');
 
+        // Validate iceServers array before using
+        if (!data.iceServers || !Array.isArray(data.iceServers) || data.iceServers.length === 0) {
+            console.warn('🔗 Invalid iceServers response, using fallback');
+            return FALLBACK_ICE_CONFIG;
+        }
+
         return {
             iceServers: data.iceServers,
             iceCandidatePoolSize: 10,
