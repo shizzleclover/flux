@@ -3,17 +3,36 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import { useSocket } from './useSocket';
 
-const ICE_SERVERS: RTCConfiguration = {
+// Fallback STUN-only config (works on LAN, may fail across NAT)
+const FALLBACK_ICE_CONFIG: RTCConfiguration = {
     iceServers: [
-        // Google STUN servers
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        // Free TURN servers from OpenRelay (static demo credentials)
-        { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-        { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-        { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
     ],
     iceCandidatePoolSize: 10,
+};
+
+// Fetch TURN credentials from backend (Cloudflare Calls)
+const fetchIceServers = async (): Promise<RTCConfiguration> => {
+    try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const res = await fetch(`${apiUrl}/api/turn/credentials`);
+
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        console.log('🔗 ICE servers loaded:', data.iceServers?.length || 0, 'servers');
+
+        return {
+            iceServers: data.iceServers,
+            iceCandidatePoolSize: 10,
+        };
+    } catch (error) {
+        console.warn('🔗 Failed to fetch TURN credentials, using STUN fallback:', error);
+        return FALLBACK_ICE_CONFIG;
+    }
 };
 
 interface UseWebRTCReturn {
@@ -32,6 +51,7 @@ export function useWebRTC(): UseWebRTCReturn {
     const { emit } = useSocket();
     const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
     const iceCandidateQueueRef = useRef<RTCIceCandidateInit[]>([]);
+    const iceConfigRef = useRef<RTCConfiguration | null>(null);
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
     const [connectionState, setConnectionState] = useState<RTCPeerConnectionState | 'new'>('new');
     const [peerId, setPeerId] = useState<string | null>(null);
@@ -42,10 +62,21 @@ export function useWebRTC(): UseWebRTCReturn {
         peerIdRef.current = peerId;
     }, [peerId]);
 
-    const createPeerConnection = useCallback((localStream: MediaStream): RTCPeerConnection => {
+    // Pre-fetch ICE config on mount
+    useEffect(() => {
+        fetchIceServers().then(config => {
+            iceConfigRef.current = config;
+        });
+    }, []);
+
+    const createPeerConnection = useCallback(async (localStream: MediaStream): Promise<RTCPeerConnection> => {
         console.log('🔗 Creating peer connection');
 
-        const pc = new RTCPeerConnection(ICE_SERVERS);
+        // Get ICE config (use cached or fetch fresh)
+        const iceConfig = iceConfigRef.current || await fetchIceServers();
+        iceConfigRef.current = iceConfig;
+
+        const pc = new RTCPeerConnection(iceConfig);
 
         // Add local tracks to the connection
         localStream.getTracks().forEach((track) => {
@@ -72,18 +103,28 @@ export function useWebRTC(): UseWebRTCReturn {
             }
         };
 
-        // Handle ICE candidates
+        // Handle ICE candidates with type logging
         pc.onicecandidate = (event) => {
             const currentPeerId = peerIdRef.current;
-            if (event.candidate && currentPeerId) {
-                console.log('🔗 Sending ICE candidate');
-                emit('ice-candidate', {
-                    candidate: event.candidate.toJSON(),
-                    targetId: currentPeerId,
-                });
-            } else if (event.candidate) {
-                console.warn('🔗 ICE candidate generated but no peerId found (stale closure?)');
+            if (event.candidate) {
+                // Log candidate type for debugging (host/srflx/relay)
+                const candidateType = event.candidate.type || 'unknown';
+                console.log(`🔗 ICE candidate: type=${candidateType}, protocol=${event.candidate.protocol}`);
+
+                if (currentPeerId) {
+                    emit('ice-candidate', {
+                        candidate: event.candidate.toJSON(),
+                        targetId: currentPeerId,
+                    });
+                } else {
+                    console.warn('🔗 ICE candidate generated but no peerId found');
+                }
             }
+        };
+
+        // Log ICE gathering state
+        pc.onicegatheringstatechange = () => {
+            console.log('🔗 ICE gathering state:', pc.iceGatheringState);
         };
 
         // Handle connection state changes
@@ -108,7 +149,7 @@ export function useWebRTC(): UseWebRTCReturn {
             return;
         }
 
-        const pc = createPeerConnection(localStream);
+        const pc = await createPeerConnection(localStream);
 
         try {
             const offer = await pc.createOffer();
@@ -134,7 +175,7 @@ export function useWebRTC(): UseWebRTCReturn {
             return;
         }
 
-        const pc = createPeerConnection(localStream);
+        const pc = await createPeerConnection(localStream);
 
         try {
             await pc.setRemoteDescription(new RTCSessionDescription(sdp));
