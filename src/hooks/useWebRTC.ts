@@ -15,7 +15,8 @@ const FALLBACK_ICE_CONFIG: RTCConfiguration = {
 // Fetch TURN credentials from backend (Cloudflare Calls)
 const fetchIceServers = async (): Promise<RTCConfiguration> => {
     try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        // Use same URL as socket.ts - production Railway or local dev
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://flux-be-production.up.railway.app';
         const res = await fetch(`${apiUrl}/api/turn/credentials`);
 
         if (!res.ok) {
