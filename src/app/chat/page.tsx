@@ -14,6 +14,8 @@ interface Message {
     text: string;
     isOwn: boolean;
     timestamp: number;
+    type?: 'text' | 'gif';
+    gifUrl?: string;
 }
 
 export default function ChatPage() {
@@ -114,7 +116,7 @@ export default function ChatPage() {
             handleIceCandidate(candidate);
         };
 
-        const handleChatMessage = ({ message, senderId, timestamp }: { message: string; senderId: string; timestamp: number }) => {
+        const handleChatMessage = ({ message, senderId, timestamp, type, gifUrl }: { message: string; senderId: string; timestamp: number; type?: 'text' | 'gif'; gifUrl?: string }) => {
             setMessages((prev) => [
                 ...prev,
                 {
@@ -122,6 +124,8 @@ export default function ChatPage() {
                     text: message,
                     isOwn: false,
                     timestamp,
+                    type: type || 'text',
+                    gifUrl,
                 },
             ]);
         };
@@ -191,7 +195,7 @@ export default function ChatPage() {
     }, [closeConnection, stopMedia, emit, router]);
 
     // Send chat message
-    const handleSendMessage = useCallback((text: string) => {
+    const handleSendMessage = useCallback((text: string, type: 'text' | 'gif' = 'text', gifUrl?: string) => {
         if (!peerId) return;
 
         const message: Message = {
@@ -199,10 +203,12 @@ export default function ChatPage() {
             text,
             isOwn: true,
             timestamp: Date.now(),
+            type,
+            gifUrl,
         };
 
         setMessages((prev) => [...prev, message]);
-        emit('chat-message', { message: text, targetId: peerId });
+        emit('chat-message', { message: text, type, gifUrl, targetId: peerId });
     }, [emit, peerId]);
 
     // Handle typing indicator

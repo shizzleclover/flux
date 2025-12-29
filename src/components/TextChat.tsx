@@ -1,15 +1,25 @@
+'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
+import { GifPicker } from './GifPicker';
+import { Theme } from 'emoji-picker-react';
+
+// Dynamically import EmojiPicker to avoid SSR issues
+const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false });
 
 interface Message {
     id: string;
     text: string;
     isOwn: boolean;
     timestamp: number;
+    type?: 'text' | 'gif';
+    gifUrl?: string;
 }
 
 interface TextChatProps {
     messages: Message[];
-    onSendMessage: (text: string) => void;
+    onSendMessage: (text: string, type?: 'text' | 'gif', gifUrl?: string) => void;
     onTyping: (isTyping: boolean) => void;
     isPeerTyping: boolean;
     disabled?: boolean;
@@ -23,8 +33,11 @@ export const TextChat: React.FC<TextChatProps> = ({
     disabled = false,
 }) => {
     const [inputText, setInputText] = useState('');
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [showGifPicker, setShowGifPicker] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -40,10 +53,30 @@ export const TextChat: React.FC<TextChatProps> = ({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!inputText.trim() || disabled) return;
-        onSendMessage(inputText.trim());
+        onSendMessage(inputText.trim(), 'text');
         setInputText('');
         onTyping(false);
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+
+    const handleEmojiSelect = (emojiData: { emoji: string }) => {
+        setInputText((prev) => prev + emojiData.emoji);
+        inputRef.current?.focus();
+    };
+
+    const handleGifSelect = (gifUrl: string) => {
+        onSendMessage(gifUrl, 'gif', gifUrl);
+        setShowGifPicker(false);
+    };
+
+    const toggleEmojiPicker = () => {
+        setShowEmojiPicker(!showEmojiPicker);
+        setShowGifPicker(false);
+    };
+
+    const toggleGifPicker = () => {
+        setShowGifPicker(!showGifPicker);
+        setShowEmojiPicker(false);
     };
 
     return (
@@ -107,19 +140,37 @@ export const TextChat: React.FC<TextChatProps> = ({
                             maxWidth: '280px',
                             gap: '6px'
                         }}>
-                            {/* Message Bubble */}
-                            <div style={{
-                                padding: '12px 16px',
-                                borderRadius: msg.isOwn ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                                backgroundColor: msg.isOwn ? '#ffffff' : 'rgba(255,255,255,0.1)',
-                                color: msg.isOwn ? '#1a1a2e' : '#ffffff',
-                                border: msg.isOwn ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                                fontSize: '14px',
-                                lineHeight: '1.5',
-                                wordBreak: 'break-word'
-                            }}>
-                                {msg.text}
-                            </div>
+                            {/* Message Bubble or GIF */}
+                            {msg.type === 'gif' && msg.gifUrl ? (
+                                <div style={{
+                                    borderRadius: '12px',
+                                    overflow: 'hidden',
+                                    maxWidth: '200px',
+                                }}>
+                                    <img
+                                        src={msg.gifUrl}
+                                        alt="GIF"
+                                        style={{
+                                            width: '100%',
+                                            height: 'auto',
+                                            display: 'block',
+                                        }}
+                                    />
+                                </div>
+                            ) : (
+                                <div style={{
+                                    padding: '12px 16px',
+                                    borderRadius: msg.isOwn ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                                    backgroundColor: msg.isOwn ? '#ffffff' : 'rgba(255,255,255,0.1)',
+                                    color: msg.isOwn ? '#1a1a2e' : '#ffffff',
+                                    border: msg.isOwn ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                                    fontSize: '14px',
+                                    lineHeight: '1.5',
+                                    wordBreak: 'break-word'
+                                }}>
+                                    {msg.text}
+                                </div>
+                            )}
                             {/* Timestamp */}
                             <span style={{
                                 fontSize: '11px',
@@ -157,58 +208,143 @@ export const TextChat: React.FC<TextChatProps> = ({
             <div style={{
                 padding: '16px',
                 backgroundColor: 'rgba(0,0,0,0.5)',
-                borderTop: '1px solid rgba(255,255,255,0.1)'
+                borderTop: '1px solid rgba(255,255,255,0.1)',
+                position: 'relative',
             }}>
+                {/* Emoji Picker */}
+                {showEmojiPicker && (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            bottom: '100%',
+                            left: '16px',
+                            marginBottom: '8px',
+                            zIndex: 10,
+                        }}
+                    >
+                        <EmojiPicker
+                            onEmojiClick={handleEmojiSelect}
+                            width={320}
+                            height={350}
+                            theme={Theme.DARK}
+                            searchPlaceholder="Search emoji..."
+                            previewConfig={{ showPreview: false }}
+                        />
+                    </div>
+                )}
+
+                {/* GIF Picker */}
+                {showGifPicker && (
+                    <GifPicker
+                        onSelect={handleGifSelect}
+                        onClose={() => setShowGifPicker(false)}
+                    />
+                )}
+
                 <form
                     onSubmit={handleSubmit}
                     style={{
-                        position: 'relative',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
                         opacity: disabled ? 0.5 : 1
                     }}
                 >
-                    <input
-                        type="text"
-                        value={inputText}
-                        onChange={handleInputChange}
-                        disabled={disabled}
-                        placeholder={disabled ? "Connecting..." : "Type a message..."}
-                        style={{
-                            width: '100%',
-                            height: '48px',
-                            backgroundColor: 'rgba(255,255,255,0.05)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: '24px',
-                            padding: '0 56px 0 20px',
-                            fontSize: '14px',
-                            color: 'white',
-                            outline: 'none',
-                            boxSizing: 'border-box'
-                        }}
-                    />
+                    {/* Emoji Button */}
                     <button
-                        type="submit"
-                        disabled={!inputText.trim() || disabled}
+                        type="button"
+                        onClick={toggleEmojiPicker}
+                        disabled={disabled}
                         style={{
-                            position: 'absolute',
-                            right: '8px',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            width: '32px',
-                            height: '32px',
+                            width: '40px',
+                            height: '40px',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             borderRadius: '50%',
-                            backgroundColor: (!inputText.trim() || disabled) ? 'rgba(255,255,255,0.1)' : 'white',
-                            color: (!inputText.trim() || disabled) ? 'rgba(255,255,255,0.3)' : 'black',
-                            border: 'none',
-                            cursor: (!inputText.trim() || disabled) ? 'not-allowed' : 'pointer'
+                            backgroundColor: showEmojiPicker ? 'rgba(108, 92, 231, 0.3)' : 'rgba(255,255,255,0.05)',
+                            border: showEmojiPicker ? '1px solid #6C5CE7' : '1px solid rgba(255,255,255,0.1)',
+                            color: showEmojiPicker ? '#6C5CE7' : 'rgba(255,255,255,0.6)',
+                            cursor: disabled ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.2s',
+                            flexShrink: 0,
                         }}
                     >
-                        <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
+                        <span style={{ fontSize: '18px' }}>😊</span>
                     </button>
+
+                    {/* GIF Button */}
+                    <button
+                        type="button"
+                        onClick={toggleGifPicker}
+                        disabled={disabled}
+                        style={{
+                            width: '40px',
+                            height: '40px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '50%',
+                            backgroundColor: showGifPicker ? 'rgba(108, 92, 231, 0.3)' : 'rgba(255,255,255,0.05)',
+                            border: showGifPicker ? '1px solid #6C5CE7' : '1px solid rgba(255,255,255,0.1)',
+                            color: showGifPicker ? '#6C5CE7' : 'rgba(255,255,255,0.6)',
+                            cursor: disabled ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.2s',
+                            flexShrink: 0,
+                            fontWeight: 700,
+                            fontSize: '11px',
+                        }}
+                    >
+                        GIF
+                    </button>
+
+                    {/* Input Field */}
+                    <div style={{ flex: 1, position: 'relative' }}>
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={inputText}
+                            onChange={handleInputChange}
+                            disabled={disabled}
+                            placeholder={disabled ? "Connecting..." : "Type a message..."}
+                            style={{
+                                width: '100%',
+                                height: '48px',
+                                backgroundColor: 'rgba(255,255,255,0.05)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '24px',
+                                padding: '0 56px 0 20px',
+                                fontSize: '14px',
+                                color: 'white',
+                                outline: 'none',
+                                boxSizing: 'border-box'
+                            }}
+                        />
+                        <button
+                            type="submit"
+                            disabled={!inputText.trim() || disabled}
+                            style={{
+                                position: 'absolute',
+                                right: '8px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                width: '32px',
+                                height: '32px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: '50%',
+                                backgroundColor: (!inputText.trim() || disabled) ? 'rgba(255,255,255,0.1)' : 'white',
+                                color: (!inputText.trim() || disabled) ? 'rgba(255,255,255,0.3)' : 'black',
+                                border: 'none',
+                                cursor: (!inputText.trim() || disabled) ? 'not-allowed' : 'pointer'
+                            }}
+                        >
+                            <svg style={{ width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>

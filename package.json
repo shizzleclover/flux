@@ -9,6 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@giphy/js-fetch-api": "^5.7.0",
+    "@giphy/react-components": "^10.1.1",
+    "emoji-picker-react": "^4.16.1",
     "motion": "^12.23.26",
     "next": "16.1.1",
     "ogl": "^1.0.11",
