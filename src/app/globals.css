@@ -36,8 +36,8 @@ body {
 }
 
 body {
-    background-color: #E0F6FF;
-    color: #131113;
+    background-color: #ffffff;
+    color: #1a1a1a;
     font-family: var(--font-outfit), system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
