@@ -1,17 +1,23 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
+import { Outfit, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
 const outfit = Outfit({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-sans",
+  variable: "--font-outfit",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-space-grotesk",
 });
 
 export const metadata: Metadata = {
-  title: "Fluxxx - Anonymous Video Chat for Students",
-  description: "Connect instantly with random peers in your faculty. No sign-ups, no strings - just real conversations.",
-  keywords: ["video chat", "anonymous", "students", "random chat", "webrtc"],
+  title: "Fluxx - Anonymous Video Chat for Students",
+  description: "Meet strangers from your campus. Anonymous video chats with other students. Skip the awkward, find your people.",
+  keywords: ["video chat", "anonymous", "students", "random chat", "webrtc", "campus", "university"],
 };
 
 export default function RootLayout({
@@ -21,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${outfit.className} antialiased`}>
+      <body className={`${outfit.variable} ${spaceGrotesk.variable} font-sans antialiased`}>
         {children}
       </body>
     </html>

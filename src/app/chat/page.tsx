@@ -156,6 +156,7 @@ export default function ChatPage() {
 
         return () => {
             off('matched');
+            
             off('waiting');
             off('offer');
             off('answer');

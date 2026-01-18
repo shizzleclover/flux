@@ -35,6 +35,7 @@ export const TextChat: React.FC<TextChatProps> = ({
     const [inputText, setInputText] = useState('');
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [showGifPicker, setShowGifPicker] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -203,6 +204,103 @@ export const TextChat: React.FC<TextChatProps> = ({
                 )}
                 <div ref={messagesEndRef} />
             </div>
+
+            {/* Suggestion Chips - Collapsible */}
+            {messages.length < 5 && !disabled && (
+                <div style={{
+                    backgroundColor: 'rgba(0,0,0,0.3)',
+                    borderTop: '1px solid rgba(255,255,255,0.05)',
+                }}>
+                    {/* Toggle Button */}
+                    <button
+                        onClick={() => setShowSuggestions(!showSuggestions)}
+                        style={{
+                            width: '100%',
+                            padding: '8px 16px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            background: 'none',
+                            border: 'none',
+                            color: 'rgba(255,255,255,0.5)',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            transition: 'color 0.2s',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.8)'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+                    >
+                        <span>💡 Conversation starters</span>
+                        <svg
+                            style={{
+                                width: '12px',
+                                height: '12px',
+                                transform: showSuggestions ? 'rotate(180deg)' : 'rotate(0deg)',
+                                transition: 'transform 0.2s'
+                            }}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    {/* Chips Container - Animated */}
+                    <div style={{
+                        maxHeight: showSuggestions ? '200px' : '0px',
+                        opacity: showSuggestions ? 1 : 0,
+                        overflow: 'hidden',
+                        transition: 'max-height 0.3s ease-out, opacity 0.2s ease-out',
+                    }}>
+                        <div style={{
+                            padding: '8px 16px 12px',
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '8px',
+                        }}>
+                            {[
+                                { text: "What's your snap? 👻" },
+                                { text: "Where are you from? 🌍" },
+                                { text: "What's your vibe today? ✨" },
+                                { text: "Music recommendations? 🎵" },
+                                { text: "Hot take time 🔥" },
+                                { text: "What are you up to? 💭" },
+                            ].map((suggestion, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => {
+                                        onSendMessage(suggestion.text, 'text');
+                                        setShowSuggestions(false);
+                                    }}
+                                    style={{
+                                        padding: '8px 14px',
+                                        borderRadius: '20px',
+                                        backgroundColor: 'rgba(108, 92, 231, 0.15)',
+                                        border: '1px solid rgba(108, 92, 231, 0.3)',
+                                        color: 'white',
+                                        fontSize: '13px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor = 'rgba(108, 92, 231, 0.3)';
+                                        e.currentTarget.style.transform = 'scale(1.02)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = 'rgba(108, 92, 231, 0.15)';
+                                        e.currentTarget.style.transform = 'scale(1)';
+                                    }}
+                                >
+                                    {suggestion.text}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Input Area */}
             <div style={{
